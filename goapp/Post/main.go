@@ -387,8 +387,14 @@ func main() {
 	r.PUT("/users/:id", updateUserHandler)
 	r.DELETE("/users/:id", deleteUserHandler)
 
+	// Get port from environment variable
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // default port if not specified
+	}
+
 	// Start the server
-	if err := r.Run(":8080"); err != nil {
+	if err := r.Run(":" + port); err != nil {
 		panic(err)
 	}
 }
