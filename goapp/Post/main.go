@@ -388,7 +388,7 @@ func main() {
 	r.DELETE("/users/:id", deleteUserHandler)
 
 	// Start the server
-	if err := r.Run(":8082"); err != nil {
+	if err := r.Run(":8080"); err != nil {
 		panic(err)
 	}
 }

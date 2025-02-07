@@ -34,7 +34,7 @@ function App() {
   useEffect(() => {
     const fetchBackendMessage = async () => {
       try {
-        const response = await axios.get('http://localhost:8082/');
+        const response = await axios.get('http://https://crud-whit-go.onrender.com/');
         setBackendMessage(response.data.message || 'Bienvenido!');
       } catch (error) {
         console.error('Error al obtener mensaje del backend:', error);
@@ -42,7 +42,7 @@ function App() {
     };
     const getIp = async () => {
       try {
-        const resIp = await axios.get('http://localhost:8082/ip');
+        const resIp = await axios.get('http://https://crud-whit-go.onrender.com/ip');
         // Guardamos lo que se mostraba en el console.log
         setIpData(resIp.data.data);
         setIp(resIp.data.ip);
@@ -205,7 +205,7 @@ function App() {
     });
     try {
       if (!isLogin) {
-        const response = await axios.post('http://localhost:8082/register', form);
+        const response = await axios.post('http://https://crud-whit-go.onrender.com/register', form);
         alert(response.data.message);
         setForm({ username: '', password: '', email: '', birthDate: '', fullName: '' });
         setIsValid(false);
@@ -216,7 +216,7 @@ function App() {
             Password: form.password
           }
         });
-        const response = await axios.get('http://localhost:8082/validate', {
+        const response = await axios.get('http://https://crud-whit-go.onrender.com/validate', {
           headers: {
             Username: form.username,
             Password: form.password
