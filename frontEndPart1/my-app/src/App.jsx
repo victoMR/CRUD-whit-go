@@ -4,6 +4,16 @@ import validator from 'validator';
 import ViewUsers from './templates/ViewUsers';
 import ErrorModal from './components/ErrorModal';
 
+axios.interceptors.request.use(request => {
+  console.log('Request:', request);
+  return request;
+});
+
+axios.interceptors.response.use(response => {
+  console.log('Response:', response);
+  return response;
+});
+
 function App() {
   const [form, setForm] = useState({
     username: '',
@@ -189,6 +199,10 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Enviando datos:', {
+      username: form.username,
+      password: form.password
+    });
     try {
       if (!isLogin) {
         const response = await axios.post('http://localhost:8082/register', form);
@@ -196,6 +210,12 @@ function App() {
         setForm({ username: '', password: '', email: '', birthDate: '', fullName: '' });
         setIsValid(false);
       } else {
+        console.log('Intentando login con:', {
+          headers: {
+            Username: form.username,
+            Password: form.password
+          }
+        });
         const response = await axios.get('http://localhost:8082/validate', {
           headers: {
             Username: form.username,

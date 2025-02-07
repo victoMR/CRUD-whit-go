@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -8,12 +9,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/ipqwery/ipapi-go"
-	"github.com/tursodatabase/go-libsql"
 	"github.com/joho/godotenv"
+	"github.com/tursodatabase/go-libsql"
 )
 
 // User represents a user in the system
@@ -33,7 +35,7 @@ var (
 )
 
 func goDotEnvVariable(key string) string {
-	
+
 	// load .env file
 	err := godotenv.Load(".env")
 
@@ -47,55 +49,92 @@ func goDotEnvVariable(key string) string {
 // GetDB returns the singleton database connection
 func GetDB() *sql.DB {
 	once.Do(func() {
+		// Cargar variables de entorno
 		dbName := goDotEnvVariable("DB_NAME")
 		primaryUrl := goDotEnvVariable("PRIMARY_URL")
 		authToken := goDotEnvVariable("AUTH_TOKEN")
 
-		dir, err := os.MkdirTemp("", "libsql-*")
-		if err != nil {
-			fmt.Println("Error creating temporary directory:", err)
+		// Logging de configuración
+		fmt.Println("=== Configuración de Base de Datos ===")
+		fmt.Printf("DB Name: %s\n", dbName)
+		fmt.Printf("URL: %s\n", primaryUrl)
+		fmt.Printf("Token length: %d\n", len(authToken))
+
+		// Validar variables de entorno
+		if dbName == "" || primaryUrl == "" || authToken == "" {
+			fmt.Println("Error: Variables de entorno faltantes")
+			fmt.Printf("DB_NAME: %v\n", dbName != "")
+			fmt.Printf("PRIMARY_URL: %v\n", primaryUrl != "")
+			fmt.Printf("AUTH_TOKEN: %v\n", authToken != "")
 			os.Exit(1)
 		}
-		// Comment out RemoveAll to persist database files
-		// defer os.RemoveAll(dir)
+
+		// Crear directorio temporal
+		dir, err := os.MkdirTemp("", "libsql-*")
+		if err != nil {
+			fmt.Printf("Error al crear directorio temporal: %v\n", err)
+			os.Exit(1)
+		}
 
 		dbPath := filepath.Join(dir, dbName)
+		fmt.Printf("DB Path: %s\n", dbPath)
 
+		// Crear el conector con timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		fmt.Println("Intentando crear el conector...")
 		connector, err := libsql.NewEmbeddedReplicaConnector(dbPath, primaryUrl,
 			libsql.WithAuthToken(authToken),
 		)
 		if err != nil {
-			fmt.Println("Error creating connector:", err)
+			fmt.Printf("Error al crear el conector: %v\n", err)
+			fmt.Println("Detalles adicionales:")
+			fmt.Printf("- Tipo de error: %T\n", err)
+			fmt.Printf("- Error completo: %+v\n", err)
 			os.Exit(1)
 		}
-		// defer connector.Close() // Removed to keep the connection open
+
+		// Abrir la conexión
+		fmt.Println("Creando conexión a la base de datos...")
 		db = sql.OpenDB(connector)
-		if err := db.Ping(); err != nil {
-			fmt.Println("Error connecting to database:", err)
+
+		// Probar la conexión con timeout
+		fmt.Println("Probando conexión...")
+		if err := db.PingContext(ctx); err != nil {
+			fmt.Printf("Error al hacer ping a la base de datos: %v\n", err)
 			os.Exit(1)
 		}
+
+		fmt.Println("✅ Conexión exitosa a la base de datos")
+
+		// Inicializar la base de datos
+		fmt.Println("Inicializando esquema de base de datos...")
 		initializeDatabase(db)
+		fmt.Println("✅ Esquema inicializado correctamente")
 	})
 	return db
 }
 
-
 // Initialize the database by creating the users table if it doesn't exist
 func initializeDatabase(db *sql.DB) {
+	fmt.Println("Creando tabla users si no existe...")
 	query := `
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT NOT NULL UNIQUE,
-		password TEXT NOT NULL,
-		email TEXT NOT NULL UNIQUE,
-		birthDate TEXT NOT NULL,
-		fullName TEXT NOT NULL
-	);`
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        birthDate TEXT NOT NULL,
+        fullName TEXT NOT NULL
+    );`
+
 	_, err := db.Exec(query)
 	if err != nil {
-		fmt.Println("Error creating users table:", err)
+		fmt.Printf("Error al crear tabla users: %v\n", err)
 		os.Exit(1)
 	}
+	fmt.Println("✅ Tabla users creada/verificada correctamente")
 }
 
 // Handler for the GET API for /
@@ -254,7 +293,7 @@ func updateUserHandler(c *gin.Context) {
 	}
 
 	db := GetDB()
-	
+
 	// Check if user exists
 	var exists bool
 	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)", id).Scan(&exists)
