@@ -394,7 +394,7 @@ func main() {
 	}
 
 	// Start the server
-	if err := r.Run(":" + port); err != nil {
+	if err := r.Run("0.0.0.0:" + port); err != nil {
 		panic(err)
 	}
 }
