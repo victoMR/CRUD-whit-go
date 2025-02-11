@@ -5,10 +5,21 @@ function App() {
   const [elements, setElements] = useState([])
   const [counter, setCounter] = useState(0)
 
+  const getRandomColor = () => {
+    const letters = '0123456789ABCDEF'
+    let color = '#'
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)]
+      console.log("Nuevo color " + color)
+    }
+    return color
+  }
+
   const handleAdd = () => {
     const newCounter = counter + 1
     setCounter(newCounter)
-    setElements([...elements, { id: newCounter }])
+    const newElement = { uid: newCounter, color: getRandomColor() }
+    setElements([...elements, newElement])
   }
 
   const handleClear = () => {
@@ -16,8 +27,9 @@ function App() {
     setCounter(0)
   }
 
-  const handleDelete = (id) => {
-    setElements(elements.filter(el => el.id !== id))
+  const handleDelete = (uid) => {
+    const newElements = elements.filter(el => el.uid !== uid)
+    setElements(newElements)
   }
 
   return (
@@ -33,12 +45,9 @@ function App() {
           </button>
         </div>
         <ul className='mt-4'>
-          {elements.map(el => (
-            <li key={el.id} className='flex items-center justify-between p-2 border rounded mt-2'>
-              <span>Elemento {el.id}</span>
-              <button className='text-red-500 hover:text-red-700' onClick={() => handleDelete(el.id)}>
-                &#10006;
-              </button>
+          {elements.map((el, index) => (
+            <li key={el.uid} style={{ backgroundColor: el.color }} className='flex items-center justify-between p-2 border rounded mt-2 cursor-pointer' onClick={() => handleDelete(el.uid)}>
+              <span>Elemento {index + 1}</span>
             </li>
           ))}
         </ul>
