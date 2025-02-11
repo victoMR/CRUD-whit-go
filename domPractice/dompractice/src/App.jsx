@@ -47,7 +47,7 @@ function App() {
         <ul className='mt-4'>
           {elements.map((el, index) => (
             <li key={el.uid} style={{ backgroundColor: el.color }} className='flex items-center justify-between p-2 border rounded mt-2 cursor-pointer' onClick={() => handleDelete(el.uid)}>
-              <span>Elemento {index + 1}</span>
+              <span>Elemento {index + 1} 👍 </span>
             </li>
           ))}
         </ul>
